@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 st.set_page_config(
-    page_title="SmartHome Supply Chain Control Tower",
+    page_title="AI-Driven Supply Chain Planning & Control System",
     page_icon="📦",
     layout="wide"
 )
@@ -254,7 +254,6 @@ def calculate_products(df):
         0
     )
 
-    # ABC Analysis
     total_usage = df["Annual Usage Value"].sum()
     df = df.sort_values("Annual Usage Value", ascending=False).reset_index(drop=True)
     df["Cumulative Value %"] = np.where(
@@ -315,8 +314,8 @@ suppliers = calculate_suppliers(st.session_state.suppliers)
 # =============================
 st.markdown("""
 <div class="hero">
-    <h1>📦 SmartHome Supply Chain Control Tower</h1>
-    <p>Enterprise-style application for inventory planning, EOQ, forecasting, supplier performance, purchase order recommendations, ABC analysis and KPI-based decision support.</p>
+    <h1>📦 AI-Driven Supply Chain Planning & Control System</h1>
+    <p>Enterprise-style application for an online smart-home retailer, integrating forecasting, inventory planning, order management, supplier management, KPIs and AI-supported decision logic.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -327,6 +326,7 @@ page = st.sidebar.radio(
     "Control Tower",
     [
         "🏠 Executive Dashboard",
+        "📘 How to Use This App",
         "🧾 Product Management",
         "📋 Order Management",
         "📈 Forecast Planning",
@@ -337,6 +337,8 @@ page = st.sidebar.radio(
         "🎯 KPI Targets",
         "🧪 Scenario Planning",
         "✅ Action Centre",
+        "🤖 Generative AI Use",
+        "⚠️ Limitations",
         "ℹ️ Assumptions",
         "📤 Export"
     ]
@@ -362,7 +364,16 @@ if page == "🏠 Executive Dashboard":
 
     st.markdown("""
     <div class="info-box">
-    Executive workflow: Review KPI dashboard → identify reorder alerts → create purchase order recommendation → export KPI evidence for the report.
+    <b>Business Context:</b> SmartHome Solutions is a simulated online retailer of smart-home products.
+    The application supports managers by combining forecasting, inventory planning, supplier performance,
+    order recommendations and KPI-based decision support.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    <b>Executive workflow:</b> Review KPI dashboard → analyse forecasts → check inventory status →
+    review supplier performance → create purchase order recommendation → export KPI evidence for the report.
     </div>
     """, unsafe_allow_html=True)
 
@@ -377,6 +388,43 @@ if page == "🏠 Executive Dashboard":
     with col2:
         st.markdown("### EOQ Recommendations")
         st.bar_chart(products.set_index("Product")["EOQ"])
+
+elif page == "📘 How to Use This App":
+    st.markdown('<div class="section-title">How to Use This App</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    This application is designed as a managerial decision-support prototype for an online smart-home retailer.
+    It follows a clear supply chain planning workflow.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    ### Recommended Manager Workflow
+
+    1. **Executive Dashboard**  
+       Review the main KPIs, inventory value, reorder alerts, supplier score and service level.
+
+    2. **Forecast Planning**  
+       Check monthly and next-year demand forecasts based on annual demand and growth assumptions.
+
+    3. **Inventory Control**  
+       Review EOQ, safety stock and reorder point calculations for each product.
+
+    4. **Supplier Management**  
+       Evaluate supplier performance using delivery, quality, cost and risk scores.
+
+    5. **Order Management**  
+       Convert inventory alerts into purchase order recommendations.
+
+    6. **Action Centre**  
+       Review automated recommendations and management actions.
+
+    7. **Export**  
+       Download KPI data for appendix evidence and reporting.
+    """)
+
+    st.success("The purpose of the application is not only to display data, but to support planning and control decisions.")
 
 elif page == "🧾 Product Management":
     st.markdown('<div class="section-title">Product Management</div>', unsafe_allow_html=True)
@@ -409,7 +457,7 @@ elif page == "🧾 Product Management":
             st.rerun()
 
 elif page == "📋 Order Management":
-    st.markdown('<div class="section-title">Order Management & Purchase Recommendations</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Order Management & Purchase Order Recommendations</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="info-box">
@@ -667,6 +715,63 @@ elif page == "✅ Action Centre":
                 """,
                 unsafe_allow_html=True
             )
+
+elif page == "🤖 Generative AI Use":
+    st.markdown('<div class="section-title">Use of Generative Artificial Intelligence</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    This prototype was developed with the assistance of Generative AI as permitted by the assessment handout.
+    GenAI was used as a support tool for application structure, dashboard design, coding logic and documentation.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    ### How Generative AI Supported Development
+
+    - Generated the initial Streamlit application structure.
+    - Helped design the dashboard layout and navigation flow.
+    - Supported the coding of EOQ, safety stock and reorder point calculations.
+    - Assisted in creating KPI cards, alerts and purchase order recommendations.
+    - Helped improve the user interface and decision-support workflow.
+    - Supported documentation wording for the report.
+
+    ### Human Validation
+
+    The final application logic was reviewed and adapted to align with supply chain planning and control concepts.
+    The student is responsible for explaining the application, validating the calculations and critically reflecting on
+    the limitations of AI-supported development.
+    """)
+
+elif page == "⚠️ Limitations":
+    st.markdown('<div class="section-title">Limitations</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="warn-box">
+    This application is a functional academic prototype. It is designed to demonstrate supply chain planning logic,
+    not to operate as a production-ready enterprise system.
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    ### Main Limitations
+
+    - The data is simulated/mock data and does not represent real company transactions.
+    - Forecasting is simplified and based on annual demand and growth assumptions.
+    - Supplier scores are illustrative and not based on live supplier performance data.
+    - The app is not connected to ERP, Shopify, warehouse or accounting systems.
+    - Purchase orders are recommendations only; they are not sent automatically to suppliers.
+    - The model does not include seasonality, promotions, transport disruption or real-time demand shocks.
+    - Security, user permissions and database persistence would need improvement for real business use.
+
+    ### Future Improvements
+
+    - Connect the app to real sales, inventory and supplier data.
+    - Add demand seasonality and forecast accuracy tracking.
+    - Add user login and management approval workflows.
+    - Integrate with ERP or e-commerce platforms.
+    - Add automated purchase order generation and supplier email notifications.
+    """)
 
 elif page == "ℹ️ Assumptions":
     st.markdown('<div class="section-title">Assumptions & Academic Notes</div>', unsafe_allow_html=True)
