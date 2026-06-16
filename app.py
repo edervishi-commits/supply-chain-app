@@ -139,7 +139,8 @@ def default_products():
         "Orders": [100, 140, 60, 80, 120, 95, 70],
         "Orders Fulfilled": [96, 130, 55, 78, 114, 90, 64],
         "Stockouts": [2, 5, 4, 1, 3, 2, 4],
-        "Growth %": [8, 12, 5, 10, 7, 9, 6]
+        "Growth %": [8, 12, 5, 10, 7, 9, 6],
+        "Actual Monthly Demand": [105, 170, 52, 82, 130, 96, 66]
     })
 
 def default_suppliers():
@@ -176,7 +177,7 @@ def calculate_products(df):
     required_cols = [
         "Product", "Category", "Supplier", "Annual Demand", "Current Stock", "Ordering Cost",
         "Holding Cost", "Lead Time", "Demand SD", "Unit Cost", "Orders",
-        "Orders Fulfilled", "Stockouts", "Growth %"
+        "Orders Fulfilled", "Stockouts", "Growth %", "Actual Monthly Demand"
     ]
 
     for col in required_cols:
@@ -186,7 +187,7 @@ def calculate_products(df):
     numeric_cols = [
         "Annual Demand", "Current Stock", "Ordering Cost", "Holding Cost",
         "Lead Time", "Demand SD", "Unit Cost", "Orders", "Orders Fulfilled",
-        "Stockouts", "Growth %"
+        "Stockouts", "Growth %", "Actual Monthly Demand"
     ]
 
     for col in numeric_cols:
@@ -223,6 +224,13 @@ def calculate_products(df):
     ).round(2)
 
     df["Monthly Forecast"] = (df["Annual Demand"] / 12).round(0)
+    df["Forecast Error"] = (df["Actual Monthly Demand"] - df["Monthly Forecast"]).round(0)
+    df["Forecast Accuracy %"] = np.where(
+        df["Actual Monthly Demand"] > 0,
+        (100 - (abs(df["Forecast Error"]) / df["Actual Monthly Demand"]) * 100),
+        0
+    ).round(1)
+    df["Forecast Accuracy %"] = df["Forecast Accuracy %"].clip(lower=0, upper=100)
     df["Next Year Forecast"] = (df["Annual Demand"] * (1 + df["Growth %"] / 100)).round(0)
 
     df["Annual Usage Value"] = (df["Annual Demand"] * df["Unit Cost"]).round(2)
@@ -329,7 +337,9 @@ page = st.sidebar.radio(
         "📘 How to Use This App",
         "🧾 Product Management",
         "📋 Order Management",
+        "🧾 Purchase Order Generator",
         "📈 Forecast Planning",
+        "📊 Forecast Accuracy",
         "📦 Inventory Control",
         "🏷️ ABC Analysis",
         "💰 Cost Analysis",
@@ -361,6 +371,12 @@ if page == "🏠 Executive Dashboard":
     c6.metric("Stockout Rate", f"{products['Stockout Rate %'].mean():.1f}%")
     c7.metric("Inventory Turnover", f"{products['Inventory Turnover'].mean():.2f}")
     c8.metric("Open Purchase Orders", len(products[products["Order Status"] == "Create Purchase Order"]))
+
+    c9, c10, c11, c12 = st.columns(4)
+    c9.metric("Forecast Accuracy", f"{products['Forecast Accuracy %'].mean():.1f}%")
+    c10.metric("Products Below ROP", len(products[products["Current Stock"] <= products["Reorder Point"]]))
+    c11.metric("ABC A-Items", len(products[products["ABC Class"] == "A"]))
+    c12.metric("Total Inventory Cost", f"€{products['Total Inventory Cost'].sum():,.0f}")
 
     st.markdown("""
     <div class="info-box">
@@ -414,13 +430,16 @@ elif page == "📘 How to Use This App":
     4. **Supplier Management**  
        Evaluate supplier performance using delivery, quality, cost and risk scores.
 
-    5. **Order Management**  
-       Convert inventory alerts into purchase order recommendations.
+    5. **Order Management and Purchase Order Generator**  
+       Convert inventory alerts into purchase order recommendations and generate supplier-level purchase orders.
 
-    6. **Action Centre**  
+    6. **Forecast Accuracy**  
+       Compare forecast demand with actual demand to evaluate planning quality.
+
+    7. **Action Centre**  
        Review automated recommendations and management actions.
 
-    7. **Export**  
+    8. **Export**  
        Download KPI data for appendix evidence and reporting.
     """)
 
@@ -431,7 +450,7 @@ elif page == "🧾 Product Management":
 
     st.markdown("""
     <div class="info-box">
-    Edit all product fields directly in the table. You can add new products, delete rows, change demand, supplier, costs, stock, lead time and growth assumptions.
+    Edit all product fields directly in the table. You can add new products, delete rows and change all numbers such as annual demand, actual monthly demand, stock, cost, lead time, demand variability, fulfilled orders and growth assumptions.
     Press <b>Save Product Database</b> after editing.
     </div>
     """, unsafe_allow_html=True)
@@ -490,6 +509,87 @@ elif page == "📋 Order Management":
                 """,
                 unsafe_allow_html=True
             )
+
+
+elif page == "🧾 Purchase Order Generator":
+    st.markdown('<div class="section-title">Purchase Order Generator</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    This page generates supplier-level purchase order recommendations from EOQ and reorder point logic.
+    It supports the order management requirement of the assessment handout.
+    </div>
+    """, unsafe_allow_html=True)
+
+    purchase_orders = products[products["Order Status"] == "Create Purchase Order"][
+        ["Supplier", "Product", "Current Stock", "Reorder Point", "EOQ", "Recommended Order Qty", "Unit Cost"]
+    ].copy()
+
+    if purchase_orders.empty:
+        st.markdown('<div class="good-box">No purchase orders are required at the moment.</div>', unsafe_allow_html=True)
+    else:
+        purchase_orders["Estimated Order Value"] = (
+            purchase_orders["Recommended Order Qty"] * purchase_orders["Unit Cost"]
+        ).round(2)
+
+        st.dataframe(purchase_orders, use_container_width=True, hide_index=True)
+
+        supplier_po = purchase_orders.groupby("Supplier", as_index=False).agg({
+            "Recommended Order Qty": "sum",
+            "Estimated Order Value": "sum"
+        })
+
+        st.markdown("### Supplier Purchase Order Summary")
+        st.dataframe(supplier_po, use_container_width=True, hide_index=True)
+
+        selected_supplier = st.selectbox("Select supplier to generate purchase order", purchase_orders["Supplier"].unique())
+        selected_orders = purchase_orders[purchase_orders["Supplier"] == selected_supplier]
+
+        st.markdown("### Generated Purchase Order")
+        st.markdown(f"**Supplier:** {selected_supplier}")
+        st.markdown("**Order Recommendation:**")
+
+        for _, row in selected_orders.iterrows():
+            st.write(
+                f"- Order {int(row['Recommended Order Qty'])} units of {row['Product']} "
+                f"(estimated value €{row['Estimated Order Value']:,.2f})."
+            )
+
+        total_value = selected_orders["Estimated Order Value"].sum()
+        st.success(f"Total estimated purchase order value: €{total_value:,.2f}")
+
+elif page == "📊 Forecast Accuracy":
+    st.markdown('<div class="section-title">Forecast Accuracy</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    This page compares actual monthly demand with forecast demand and calculates forecast error and accuracy.
+    You can change actual demand values in Product Management and the results update automatically.
+    </div>
+    """, unsafe_allow_html=True)
+
+    accuracy = products[[
+        "Product", "Actual Monthly Demand", "Monthly Forecast", "Forecast Error", "Forecast Accuracy %"
+    ]]
+
+    st.dataframe(accuracy, use_container_width=True, hide_index=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Actual vs Forecast Demand")
+        st.bar_chart(accuracy.set_index("Product")[["Actual Monthly Demand", "Monthly Forecast"]])
+    with col2:
+        st.markdown("### Forecast Accuracy %")
+        st.bar_chart(accuracy.set_index("Product")["Forecast Accuracy %"])
+
+    avg_accuracy = accuracy["Forecast Accuracy %"].mean()
+    if avg_accuracy >= 90:
+        st.markdown('<div class="good-box">Forecasting performance is strong and supports reliable planning decisions.</div>', unsafe_allow_html=True)
+    elif avg_accuracy >= 75:
+        st.markdown('<div class="warn-box">Forecasting performance is acceptable but should be monitored.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="bad-box">Forecasting performance is weak. Demand assumptions should be reviewed.</div>', unsafe_allow_html=True)
+
 
 elif page == "📈 Forecast Planning":
     st.markdown('<div class="section-title">Forecast Planning</div>', unsafe_allow_html=True)
