@@ -8,9 +8,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# =============================
-# STYLE
-# =============================
+# =========================================================
+# DESIGN
+# =========================================================
 st.markdown("""
 <style>
 .block-container {
@@ -18,15 +18,12 @@ st.markdown("""
     padding-left: 2rem;
     padding-right: 2rem;
 }
-
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
 }
-
 [data-testid="stSidebar"] * {
     color: white;
 }
-
 .hero {
     background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 60%, #38bdf8 100%);
     padding: 32px;
@@ -35,25 +32,21 @@ st.markdown("""
     margin-bottom: 26px;
     box-shadow: 0 16px 35px rgba(15, 23, 42, 0.25);
 }
-
 .hero h1 {
-    font-size: 40px;
+    font-size: 38px;
     margin-bottom: 8px;
 }
-
 .hero p {
     font-size: 16px;
     color: #e0f2fe;
     margin-bottom: 0;
 }
-
 .section-title {
     font-size: 26px;
     font-weight: 800;
     color: #0f172a;
     margin-bottom: 14px;
 }
-
 div[data-testid="stMetric"] {
     background: white;
     padding: 18px;
@@ -61,12 +54,6 @@ div[data-testid="stMetric"] {
     border: 1px solid #e5e7eb;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
-
-div[data-testid="stMetricValue"] {
-    color: #0f172a;
-    font-weight: 800;
-}
-
 .info-box {
     background: #eff6ff;
     color: #1e3a8a;
@@ -75,7 +62,6 @@ div[data-testid="stMetricValue"] {
     border-left: 6px solid #2563eb;
     margin-bottom: 18px;
 }
-
 .good-box {
     background: #dcfce7;
     color: #166534;
@@ -84,7 +70,6 @@ div[data-testid="stMetricValue"] {
     border-left: 6px solid #16a34a;
     margin-bottom: 10px;
 }
-
 .bad-box {
     background: #fee2e2;
     color: #991b1b;
@@ -93,7 +78,6 @@ div[data-testid="stMetricValue"] {
     border-left: 6px solid #dc2626;
     margin-bottom: 10px;
 }
-
 .warn-box {
     background: #fef3c7;
     color: #92400e;
@@ -102,7 +86,6 @@ div[data-testid="stMetricValue"] {
     border-left: 6px solid #f59e0b;
     margin-bottom: 10px;
 }
-
 .stButton > button {
     border-radius: 12px;
     background: #2563eb;
@@ -111,7 +94,6 @@ div[data-testid="stMetricValue"] {
     font-weight: 700;
     padding: 0.55rem 1rem;
 }
-
 .stButton > button:hover {
     background: #1d4ed8;
     color: white;
@@ -119,28 +101,35 @@ div[data-testid="stMetricValue"] {
 </style>
 """, unsafe_allow_html=True)
 
-# =============================
+# =========================================================
 # DEFAULT DATA
-# =============================
-Z = 1.65
-
+# =========================================================
 def default_products():
     return pd.DataFrame({
         "Product": ["Smart Light", "Smart Plug", "Security Cam", "Smart Thermostat", "Door Sensor", "Smart Speaker", "Smart Lock"],
         "Category": ["Lighting", "Energy", "Security", "Climate", "Security", "Audio", "Security"],
         "Supplier": ["Alpha Electronics", "Beta Components", "Gamma Tech", "Delta Logistics", "Omega Devices", "Alpha Electronics", "Gamma Tech"],
+
+        # Editable demand and forecast fields
         "Annual Demand": [1200, 1800, 600, 900, 1500, 1100, 750],
+        "Actual Monthly Demand": [105, 170, 52, 82, 130, 96, 66],
+        "Growth %": [8, 12, 5, 10, 7, 9, 6],
+
+        # Editable inventory fields
         "Current Stock": [50, 20, 10, 120, 75, 160, 35],
         "Ordering Cost": [50, 45, 60, 55, 40, 48, 62],
         "Holding Cost": [2.0, 1.8, 3.0, 2.5, 1.5, 2.2, 3.4],
-        "Lead Time": [5, 7, 10, 6, 4, 8, 9],
+        "Lead Time Days": [5, 7, 10, 6, 4, 8, 9],
         "Demand SD": [4, 6, 3, 5, 7, 5, 4],
         "Unit Cost": [18, 12, 45, 60, 10, 35, 70],
+        "Selling Price": [30, 22, 80, 95, 18, 55, 110],
+
+        # Editable operational fields
         "Orders": [100, 140, 60, 80, 120, 95, 70],
         "Orders Fulfilled": [96, 130, 55, 78, 114, 90, 64],
         "Stockouts": [2, 5, 4, 1, 3, 2, 4],
-        "Growth %": [8, 12, 5, 10, 7, 9, 6],
-        "Actual Monthly Demand": [105, 170, 52, 82, 130, 96, 66]
+        "Review Period Days": [30, 30, 30, 30, 30, 30, 30],
+        "Target Service Level %": [95, 95, 95, 95, 95, 95, 95]
     })
 
 def default_suppliers():
@@ -150,14 +139,17 @@ def default_suppliers():
         "On-Time Delivery %": [92, 81, 74, 88, 90],
         "Quality %": [95, 88, 80, 90, 92],
         "Cost Score %": [85, 91, 76, 84, 87],
-        "Risk Score %": [18, 32, 45, 24, 20]
+        "Risk Score %": [18, 32, 45, 24, 20],
+        "Average Lead Time Days": [5, 8, 10, 6, 7]
     })
 
-def default_kpi_targets():
-    return pd.DataFrame({
-        "KPI": ["Service Level %", "Stockout Rate %", "Supplier Score %", "Inventory Turnover"],
-        "Target": [95, 2, 90, 10]
-    })
+def default_settings():
+    return {
+        "working_days_per_year": 300,
+        "default_z_value": 1.65,
+        "forecast_horizon_value": 6,
+        "forecast_horizon_unit": "Months"
+    }
 
 if "products" not in st.session_state:
     st.session_state.products = default_products()
@@ -165,19 +157,34 @@ if "products" not in st.session_state:
 if "suppliers" not in st.session_state:
     st.session_state.suppliers = default_suppliers()
 
-if "kpi_targets" not in st.session_state:
-    st.session_state.kpi_targets = default_kpi_targets()
+if "settings" not in st.session_state:
+    st.session_state.settings = default_settings()
 
-# =============================
+# =========================================================
 # CALCULATIONS
-# =============================
-def calculate_products(df):
+# =========================================================
+def z_from_service_level(service_level):
+    # Simple mapping for common service levels
+    if service_level >= 99:
+        return 2.33
+    if service_level >= 98:
+        return 2.05
+    if service_level >= 97:
+        return 1.88
+    if service_level >= 95:
+        return 1.65
+    if service_level >= 90:
+        return 1.28
+    return 1.00
+
+def calculate_products(df, settings):
     df = df.copy()
 
     required_cols = [
-        "Product", "Category", "Supplier", "Annual Demand", "Current Stock", "Ordering Cost",
-        "Holding Cost", "Lead Time", "Demand SD", "Unit Cost", "Orders",
-        "Orders Fulfilled", "Stockouts", "Growth %", "Actual Monthly Demand"
+        "Product", "Category", "Supplier", "Annual Demand", "Actual Monthly Demand", "Growth %",
+        "Current Stock", "Ordering Cost", "Holding Cost", "Lead Time Days", "Demand SD",
+        "Unit Cost", "Selling Price", "Orders", "Orders Fulfilled", "Stockouts",
+        "Review Period Days", "Target Service Level %"
     ]
 
     for col in required_cols:
@@ -185,15 +192,19 @@ def calculate_products(df):
             df[col] = "" if col in ["Product", "Category", "Supplier"] else 0
 
     numeric_cols = [
-        "Annual Demand", "Current Stock", "Ordering Cost", "Holding Cost",
-        "Lead Time", "Demand SD", "Unit Cost", "Orders", "Orders Fulfilled",
-        "Stockouts", "Growth %", "Actual Monthly Demand"
+        "Annual Demand", "Actual Monthly Demand", "Growth %", "Current Stock",
+        "Ordering Cost", "Holding Cost", "Lead Time Days", "Demand SD",
+        "Unit Cost", "Selling Price", "Orders", "Orders Fulfilled", "Stockouts",
+        "Review Period Days", "Target Service Level %"
     ]
 
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-    df["Daily Demand"] = (df["Annual Demand"] / 300).round(2)
+    working_days = settings["working_days_per_year"]
+    df["Daily Demand"] = np.where(working_days > 0, df["Annual Demand"] / working_days, 0).round(2)
+
+    df["Z Value"] = df["Target Service Level %"].apply(z_from_service_level)
 
     df["EOQ"] = np.where(
         df["Holding Cost"] > 0,
@@ -201,9 +212,74 @@ def calculate_products(df):
         0
     ).round(0)
 
-    df["Safety Stock"] = (Z * df["Demand SD"] * np.sqrt(df["Lead Time"])).round(0)
-    df["Reorder Point"] = (df["Daily Demand"] * df["Lead Time"] + df["Safety Stock"]).round(0)
+    df["Safety Stock"] = (
+        df["Z Value"] * df["Demand SD"] * np.sqrt(df["Lead Time Days"])
+    ).round(0)
+
+    df["Reorder Point"] = (
+        df["Daily Demand"] * df["Lead Time Days"] + df["Safety Stock"]
+    ).round(0)
+
+    df["Review Period Demand"] = (df["Daily Demand"] * df["Review Period Days"]).round(0)
+
+    df["Order-Up-To Level"] = (
+        df["Daily Demand"] * (df["Lead Time Days"] + df["Review Period Days"]) + df["Safety Stock"]
+    ).round(0)
+
+    df["Recommended Order Qty"] = np.where(
+        df["Current Stock"] <= df["Reorder Point"],
+        df["EOQ"],
+        0
+    ).round(0)
+
+    df["Order Status"] = np.where(
+        df["Current Stock"] <= df["Reorder Point"],
+        "Create Purchase Order",
+        "No Order Required"
+    )
+
+    df["Decision"] = np.where(
+        df["Current Stock"] <= df["Reorder Point"],
+        "Reorder Required",
+        "Healthy"
+    )
+
     df["Inventory Value"] = (df["Current Stock"] * df["Unit Cost"]).round(2)
+
+    df["Annual Usage Value"] = (df["Annual Demand"] * df["Unit Cost"]).round(2)
+
+    df["Annual Ordering Cost"] = np.where(
+        df["EOQ"] > 0,
+        (df["Annual Demand"] / df["EOQ"]) * df["Ordering Cost"],
+        0
+    ).round(2)
+
+    df["Annual Holding Cost"] = ((df["EOQ"] / 2) * df["Holding Cost"]).round(2)
+    df["Total Inventory Cost"] = (df["Annual Ordering Cost"] + df["Annual Holding Cost"]).round(2)
+
+    df["Monthly Forecast"] = (df["Annual Demand"] / 12).round(0)
+    df["Weekly Forecast"] = (df["Annual Demand"] / 52).round(0)
+    df["Forecast Error"] = (df["Actual Monthly Demand"] - df["Monthly Forecast"]).round(0)
+
+    df["Forecast Accuracy %"] = np.where(
+        df["Actual Monthly Demand"] > 0,
+        100 - (abs(df["Forecast Error"]) / df["Actual Monthly Demand"]) * 100,
+        0
+    ).round(1).clip(0, 100)
+
+    horizon_value = settings["forecast_horizon_value"]
+    horizon_unit = settings["forecast_horizon_unit"]
+
+    if horizon_unit == "Days":
+        df["Selected Horizon Forecast"] = (df["Daily Demand"] * horizon_value).round(0)
+    elif horizon_unit == "Weeks":
+        df["Selected Horizon Forecast"] = (df["Weekly Forecast"] * horizon_value).round(0)
+    else:
+        df["Selected Horizon Forecast"] = (df["Monthly Forecast"] * horizon_value).round(0)
+
+    df["Next Year Forecast"] = (
+        df["Annual Demand"] * (1 + df["Growth %"] / 100)
+    ).round(0)
 
     df["Service Level %"] = np.where(
         df["Orders"] > 0,
@@ -223,47 +299,24 @@ def calculate_products(df):
         0
     ).round(2)
 
-    df["Monthly Forecast"] = (df["Annual Demand"] / 12).round(0)
-    df["Forecast Error"] = (df["Actual Monthly Demand"] - df["Monthly Forecast"]).round(0)
-    df["Forecast Accuracy %"] = np.where(
-        df["Actual Monthly Demand"] > 0,
-        (100 - (abs(df["Forecast Error"]) / df["Actual Monthly Demand"]) * 100),
+    df["Days of Cover"] = np.where(
+        df["Daily Demand"] > 0,
+        df["Current Stock"] / df["Daily Demand"],
         0
     ).round(1)
-    df["Forecast Accuracy %"] = df["Forecast Accuracy %"].clip(lower=0, upper=100)
-    df["Next Year Forecast"] = (df["Annual Demand"] * (1 + df["Growth %"] / 100)).round(0)
 
-    df["Annual Usage Value"] = (df["Annual Demand"] * df["Unit Cost"]).round(2)
+    df["Revenue Potential"] = (df["Annual Demand"] * df["Selling Price"]).round(2)
+    df["COGS"] = (df["Annual Demand"] * df["Unit Cost"]).round(2)
 
-    df["Annual Ordering Cost"] = np.where(
-        df["EOQ"] > 0,
-        (df["Annual Demand"] / df["EOQ"]) * df["Ordering Cost"],
+    df["Gross Margin %"] = np.where(
+        df["Selling Price"] > 0,
+        ((df["Selling Price"] - df["Unit Cost"]) / df["Selling Price"]) * 100,
         0
-    ).round(2)
-
-    df["Annual Holding Cost"] = ((df["EOQ"] / 2) * df["Holding Cost"]).round(2)
-    df["Total Inventory Cost"] = (df["Annual Ordering Cost"] + df["Annual Holding Cost"]).round(2)
-
-    df["Decision"] = np.where(
-        df["Current Stock"] <= df["Reorder Point"],
-        "Reorder Required",
-        "Healthy"
-    )
-
-    df["Order Status"] = np.where(
-        df["Current Stock"] <= df["Reorder Point"],
-        "Create Purchase Order",
-        "No Order Required"
-    )
-
-    df["Recommended Order Qty"] = np.where(
-        df["Current Stock"] <= df["Reorder Point"],
-        df["EOQ"],
-        0
-    )
+    ).round(1)
 
     total_usage = df["Annual Usage Value"].sum()
     df = df.sort_values("Annual Usage Value", ascending=False).reset_index(drop=True)
+
     df["Cumulative Value %"] = np.where(
         total_usage > 0,
         (df["Annual Usage Value"].cumsum() / total_usage) * 100,
@@ -271,12 +324,25 @@ def calculate_products(df):
     ).round(1)
 
     df["ABC Class"] = np.select(
-        [
-            df["Cumulative Value %"] <= 80,
-            df["Cumulative Value %"] <= 95
-        ],
+        [df["Cumulative Value %"] <= 80, df["Cumulative Value %"] <= 95],
         ["A", "B"],
         default="C"
+    )
+
+    df["Suggested Action"] = np.select(
+        [
+            df["Current Stock"] <= df["Reorder Point"],
+            df["Forecast Accuracy %"] < 75,
+            df["Stockout Rate %"] > 5,
+            df["Gross Margin %"] < 25
+        ],
+        [
+            "Create purchase order",
+            "Review forecast assumptions",
+            "Increase safety stock",
+            "Review price or supplier cost"
+        ],
+        default="Monitor"
     )
 
     return df
@@ -284,13 +350,16 @@ def calculate_products(df):
 def calculate_suppliers(df):
     df = df.copy()
 
-    required_cols = ["Supplier", "Region", "On-Time Delivery %", "Quality %", "Cost Score %", "Risk Score %"]
+    required_cols = [
+        "Supplier", "Region", "On-Time Delivery %", "Quality %",
+        "Cost Score %", "Risk Score %", "Average Lead Time Days"
+    ]
 
     for col in required_cols:
         if col not in df.columns:
             df[col] = "" if col in ["Supplier", "Region"] else 0
 
-    for col in ["On-Time Delivery %", "Quality %", "Cost Score %", "Risk Score %"]:
+    for col in ["On-Time Delivery %", "Quality %", "Cost Score %", "Risk Score %", "Average Lead Time Days"]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
     df["Supplier Score %"] = (
@@ -314,49 +383,49 @@ def calculate_suppliers(df):
 
     return df
 
-products = calculate_products(st.session_state.products)
+products = calculate_products(st.session_state.products, st.session_state.settings)
 suppliers = calculate_suppliers(st.session_state.suppliers)
 
-# =============================
+# =========================================================
 # HEADER
-# =============================
+# =========================================================
 st.markdown("""
 <div class="hero">
     <h1>📦 AI-Driven Supply Chain Planning & Control System</h1>
-    <p>Enterprise-style application for an online smart-home retailer, integrating forecasting, inventory planning, order management, supplier management, KPIs and AI-supported decision logic.</p>
+    <p>Editable, automated and decision-focused supply chain prototype with EOQ, forecasting, order management, supplier performance, visual analytics and AI assistance.</p>
 </div>
 """, unsafe_allow_html=True)
 
-# =============================
+# =========================================================
 # SIDEBAR
-# =============================
+# =========================================================
 page = st.sidebar.radio(
     "Control Tower",
     [
         "🏠 Executive Dashboard",
-        "📘 How to Use This App",
+        "⚙️ Global Settings",
         "🧾 Product Management",
-        "📋 Order Management",
-        "🧾 Purchase Order Generator",
+        "🚚 Supplier Management",
         "📈 Forecast Planning",
         "📊 Forecast Accuracy",
         "📦 Inventory Control",
+        "📋 Order Management",
+        "🧾 Purchase Order Generator",
+        "📊 Visual Analytics",
         "🏷️ ABC Analysis",
         "💰 Cost Analysis",
-        "🚚 Supplier Management",
         "🎯 KPI Targets",
         "🧪 Scenario Planning",
+        "🤖 AI Assistance",
         "✅ Action Centre",
-        "🤖 Generative AI Use",
-        "⚠️ Limitations",
         "ℹ️ Assumptions",
         "📤 Export"
     ]
 )
 
-# =============================
+# =========================================================
 # PAGES
-# =============================
+# =========================================================
 if page == "🏠 Executive Dashboard":
     st.markdown('<div class="section-title">Executive KPI Dashboard</div>', unsafe_allow_html=True)
 
@@ -367,91 +436,86 @@ if page == "🏠 Executive Dashboard":
     c4.metric("Supplier Score", f"{suppliers['Supplier Score %'].mean():.1f}%")
 
     c5, c6, c7, c8 = st.columns(4)
-    c5.metric("Service Level", f"{products['Service Level %'].mean():.1f}%")
-    c6.metric("Stockout Rate", f"{products['Stockout Rate %'].mean():.1f}%")
+    c5.metric("Forecast Accuracy", f"{products['Forecast Accuracy %'].mean():.1f}%")
+    c6.metric("Service Level", f"{products['Service Level %'].mean():.1f}%")
     c7.metric("Inventory Turnover", f"{products['Inventory Turnover'].mean():.2f}")
     c8.metric("Open Purchase Orders", len(products[products["Order Status"] == "Create Purchase Order"]))
 
-    c9, c10, c11, c12 = st.columns(4)
-    c9.metric("Forecast Accuracy", f"{products['Forecast Accuracy %'].mean():.1f}%")
-    c10.metric("Products Below ROP", len(products[products["Current Stock"] <= products["Reorder Point"]]))
-    c11.metric("ABC A-Items", len(products[products["ABC Class"] == "A"]))
-    c12.metric("Total Inventory Cost", f"€{products['Total Inventory Cost'].sum():,.0f}")
-
     st.markdown("""
     <div class="info-box">
-    <b>Business Context:</b> SmartHome Solutions is a simulated online retailer of smart-home products.
-    The application supports managers by combining forecasting, inventory planning, supplier performance,
-    order recommendations and KPI-based decision support.
+    The app recalculates EOQ, safety stock, reorder point, forecasts, purchase orders and KPIs automatically whenever the editable input data changes.
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="info-box">
-    <b>Executive workflow:</b> Review KPI dashboard → analyse forecasts → check inventory status →
-    review supplier performance → create purchase order recommendation → export KPI evidence for the report.
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("### Inventory Control Summary")
-    summary = products[["Product", "Category", "Supplier", "Current Stock", "EOQ", "Safety Stock", "Reorder Point", "Inventory Value", "Decision"]]
-    st.dataframe(summary, use_container_width=True, hide_index=True)
+    st.markdown("### Management Summary")
+    st.dataframe(
+        products[[
+            "Product", "Supplier", "Current Stock", "EOQ", "Safety Stock",
+            "Reorder Point", "Days of Cover", "Forecast Accuracy %",
+            "Inventory Value", "Suggested Action"
+        ]],
+        use_container_width=True,
+        hide_index=True
+    )
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("### Stock Levels")
-        st.bar_chart(products.set_index("Product")["Current Stock"])
+        st.markdown("### Stock vs Reorder Point")
+        st.bar_chart(products.set_index("Product")[["Current Stock", "Reorder Point"]])
     with col2:
         st.markdown("### EOQ Recommendations")
         st.bar_chart(products.set_index("Product")["EOQ"])
 
-elif page == "📘 How to Use This App":
-    st.markdown('<div class="section-title">How to Use This App</div>', unsafe_allow_html=True)
+elif page == "⚙️ Global Settings":
+    st.markdown('<div class="section-title">Global Planning Settings</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="info-box">
-    This application is designed as a managerial decision-support prototype for an online smart-home retailer.
-    It follows a clear supply chain planning workflow.
+    Change these global assumptions to update the whole application. Days and months are included where they are needed for planning.
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    ### Recommended Manager Workflow
+    col1, col2, col3 = st.columns(3)
 
-    1. **Executive Dashboard**  
-       Review the main KPIs, inventory value, reorder alerts, supplier score and service level.
+    with col1:
+        working_days = st.number_input(
+            "Working days per year",
+            min_value=1,
+            max_value=365,
+            value=int(st.session_state.settings["working_days_per_year"]),
+            step=1
+        )
 
-    2. **Forecast Planning**  
-       Check monthly and next-year demand forecasts based on annual demand and growth assumptions.
+    with col2:
+        horizon_value = st.number_input(
+            "Forecast horizon value",
+            min_value=1,
+            max_value=60,
+            value=int(st.session_state.settings["forecast_horizon_value"]),
+            step=1
+        )
 
-    3. **Inventory Control**  
-       Review EOQ, safety stock and reorder point calculations for each product.
+    with col3:
+        horizon_unit = st.selectbox(
+            "Forecast horizon unit",
+            ["Days", "Weeks", "Months"],
+            index=["Days", "Weeks", "Months"].index(st.session_state.settings["forecast_horizon_unit"])
+        )
 
-    4. **Supplier Management**  
-       Evaluate supplier performance using delivery, quality, cost and risk scores.
-
-    5. **Order Management and Purchase Order Generator**  
-       Convert inventory alerts into purchase order recommendations and generate supplier-level purchase orders.
-
-    6. **Forecast Accuracy**  
-       Compare forecast demand with actual demand to evaluate planning quality.
-
-    7. **Action Centre**  
-       Review automated recommendations and management actions.
-
-    8. **Export**  
-       Download KPI data for appendix evidence and reporting.
-    """)
-
-    st.success("The purpose of the application is not only to display data, but to support planning and control decisions.")
+    if st.button("Save Global Settings"):
+        st.session_state.settings["working_days_per_year"] = working_days
+        st.session_state.settings["forecast_horizon_value"] = horizon_value
+        st.session_state.settings["forecast_horizon_unit"] = horizon_unit
+        st.success("Global settings saved. All calculations have been updated.")
+        st.rerun()
 
 elif page == "🧾 Product Management":
-    st.markdown('<div class="section-title">Product Management</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Product Management: Fully Editable Input Data</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="info-box">
-    Edit all product fields directly in the table. You can add new products, delete rows and change all numbers such as annual demand, actual monthly demand, stock, cost, lead time, demand variability, fulfilled orders and growth assumptions.
-    Press <b>Save Product Database</b> after editing.
+    Edit every input number here. The calculated fields are not typed manually; they are generated automatically by the model.
+    After editing, press <b>Save Product Data</b> and the whole app updates.
     </div>
     """, unsafe_allow_html=True)
 
@@ -460,30 +524,141 @@ elif page == "🧾 Product Management":
         num_rows="dynamic",
         use_container_width=True,
         hide_index=True,
-        key="product_editor"
+        key="product_editor",
+        column_config={
+            "Product": st.column_config.TextColumn("Product"),
+            "Category": st.column_config.TextColumn("Category"),
+            "Supplier": st.column_config.TextColumn("Supplier"),
+            "Annual Demand": st.column_config.NumberColumn("Annual Demand", min_value=0, step=1),
+            "Actual Monthly Demand": st.column_config.NumberColumn("Actual Monthly Demand", min_value=0, step=1),
+            "Growth %": st.column_config.NumberColumn("Growth %", step=0.5),
+            "Current Stock": st.column_config.NumberColumn("Current Stock", min_value=0, step=1),
+            "Ordering Cost": st.column_config.NumberColumn("Ordering Cost", min_value=0.0, step=1.0),
+            "Holding Cost": st.column_config.NumberColumn("Holding Cost", min_value=0.01, step=0.1),
+            "Lead Time Days": st.column_config.NumberColumn("Lead Time Days", min_value=1, step=1),
+            "Demand SD": st.column_config.NumberColumn("Demand SD", min_value=0.0, step=0.5),
+            "Unit Cost": st.column_config.NumberColumn("Unit Cost", min_value=0.0, step=0.5),
+            "Selling Price": st.column_config.NumberColumn("Selling Price", min_value=0.0, step=0.5),
+            "Orders": st.column_config.NumberColumn("Orders", min_value=0, step=1),
+            "Orders Fulfilled": st.column_config.NumberColumn("Orders Fulfilled", min_value=0, step=1),
+            "Stockouts": st.column_config.NumberColumn("Stockouts", min_value=0, step=1),
+            "Review Period Days": st.column_config.NumberColumn("Review Period Days", min_value=1, step=1),
+            "Target Service Level %": st.column_config.NumberColumn("Target Service Level %", min_value=50, max_value=99, step=1)
+        }
     )
 
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("Save Product Database"):
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Save Product Data"):
             st.session_state.products = edited_products
-            st.success("Product database saved successfully. All KPIs have been recalculated.")
+            st.success("Product data saved. All EOQ, ROP, forecast and KPI calculations updated.")
             st.rerun()
 
-    with c2:
-        if st.button("Reset Product Database"):
+    with col2:
+        if st.button("Reset Product Data"):
             st.session_state.products = default_products()
             st.rerun()
 
-elif page == "📋 Order Management":
-    st.markdown('<div class="section-title">Order Management & Purchase Order Recommendations</div>', unsafe_allow_html=True)
+    st.markdown("### Automatic Calculation Preview")
+    st.dataframe(
+        products[[
+            "Product", "EOQ", "Safety Stock", "Reorder Point", "Monthly Forecast",
+            "Forecast Accuracy %", "Recommended Order Qty", "Suggested Action"
+        ]],
+        use_container_width=True,
+        hide_index=True
+    )
 
-    st.markdown("""
-    <div class="info-box">
-    This module converts inventory alerts into purchase order recommendations. 
-    Rule: <b>If Current Stock ≤ Reorder Point, create purchase order using EOQ quantity.</b>
-    </div>
-    """, unsafe_allow_html=True)
+elif page == "🚚 Supplier Management":
+    st.markdown('<div class="section-title">Supplier Management: Editable Supplier Data</div>', unsafe_allow_html=True)
+
+    edited_suppliers = st.data_editor(
+        st.session_state.suppliers,
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        key="supplier_editor",
+        column_config={
+            "Supplier": st.column_config.TextColumn("Supplier"),
+            "Region": st.column_config.TextColumn("Region"),
+            "On-Time Delivery %": st.column_config.NumberColumn("On-Time Delivery %", min_value=0, max_value=100, step=1),
+            "Quality %": st.column_config.NumberColumn("Quality %", min_value=0, max_value=100, step=1),
+            "Cost Score %": st.column_config.NumberColumn("Cost Score %", min_value=0, max_value=100, step=1),
+            "Risk Score %": st.column_config.NumberColumn("Risk Score %", min_value=0, max_value=100, step=1),
+            "Average Lead Time Days": st.column_config.NumberColumn("Average Lead Time Days", min_value=1, step=1)
+        }
+    )
+
+    if st.button("Save Supplier Data"):
+        st.session_state.suppliers = edited_suppliers
+        st.success("Supplier data saved and supplier scores recalculated.")
+        st.rerun()
+
+    st.markdown("### Supplier Scorecard")
+    st.dataframe(suppliers, use_container_width=True, hide_index=True)
+    st.bar_chart(suppliers.set_index("Supplier")[["Supplier Score %", "Risk Score %"]])
+
+elif page == "📈 Forecast Planning":
+    st.markdown('<div class="section-title">Forecast Planning</div>', unsafe_allow_html=True)
+
+    forecast = products[[
+        "Product", "Annual Demand", "Actual Monthly Demand", "Monthly Forecast",
+        "Weekly Forecast", "Selected Horizon Forecast", "Next Year Forecast", "Growth %"
+    ]]
+
+    st.dataframe(forecast, use_container_width=True, hide_index=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Monthly Forecast")
+        st.bar_chart(forecast.set_index("Product")["Monthly Forecast"])
+    with col2:
+        st.markdown(f"### Selected Horizon Forecast ({st.session_state.settings['forecast_horizon_value']} {st.session_state.settings['forecast_horizon_unit']})")
+        st.bar_chart(forecast.set_index("Product")["Selected Horizon Forecast"])
+
+elif page == "📊 Forecast Accuracy":
+    st.markdown('<div class="section-title">Forecast Accuracy</div>', unsafe_allow_html=True)
+
+    accuracy = products[[
+        "Product", "Actual Monthly Demand", "Monthly Forecast",
+        "Forecast Error", "Forecast Accuracy %"
+    ]]
+
+    st.dataframe(accuracy, use_container_width=True, hide_index=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Actual Demand vs Forecast Demand")
+        st.bar_chart(accuracy.set_index("Product")[["Actual Monthly Demand", "Monthly Forecast"]])
+    with col2:
+        st.markdown("### Forecast Accuracy %")
+        st.bar_chart(accuracy.set_index("Product")["Forecast Accuracy %"])
+
+elif page == "📦 Inventory Control":
+    st.markdown('<div class="section-title">Inventory Control: EOQ, Safety Stock and Reorder Point</div>', unsafe_allow_html=True)
+
+    st.latex(r"EOQ=\sqrt{\frac{2DS}{H}}")
+    st.latex(r"Safety\ Stock=Z \times \sigma_d \times \sqrt{LT}")
+    st.latex(r"ROP=Daily\ Demand \times Lead\ Time + Safety\ Stock")
+
+    inv = products[[
+        "Product", "Annual Demand", "Current Stock", "Daily Demand", "EOQ",
+        "Safety Stock", "Reorder Point", "Order-Up-To Level",
+        "Days of Cover", "Decision"
+    ]]
+
+    st.dataframe(inv, use_container_width=True, hide_index=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("### Current Stock vs ROP")
+        st.bar_chart(products.set_index("Product")[["Current Stock", "Reorder Point"]])
+    with col2:
+        st.markdown("### Days of Cover")
+        st.bar_chart(products.set_index("Product")["Days of Cover"])
+
+elif page == "📋 Order Management":
+    st.markdown('<div class="section-title">Order Management</div>', unsafe_allow_html=True)
 
     orders = products[[
         "Product", "Supplier", "Current Stock", "Reorder Point", "EOQ",
@@ -494,7 +669,6 @@ elif page == "📋 Order Management":
 
     open_orders = orders[orders["Order Status"] == "Create Purchase Order"]
 
-    st.markdown("### Purchase Order Recommendations")
     if open_orders.empty:
         st.markdown('<div class="good-box">No purchase orders are currently required.</div>', unsafe_allow_html=True)
     else:
@@ -502,24 +676,14 @@ elif page == "📋 Order Management":
             st.markdown(
                 f"""
                 <div class="bad-box">
-                <b>{row['Product']}</b> from <b>{row['Supplier']}</b>: Create purchase order for 
-                <b>{row['Recommended Order Qty']}</b> units because current stock 
-                ({row['Current Stock']}) is at or below reorder point ({row['Reorder Point']}).
+                <b>{row['Product']}</b>: create purchase order for <b>{row['Recommended Order Qty']}</b> units from <b>{row['Supplier']}</b>.
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-
 elif page == "🧾 Purchase Order Generator":
     st.markdown('<div class="section-title">Purchase Order Generator</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="info-box">
-    This page generates supplier-level purchase order recommendations from EOQ and reorder point logic.
-    It supports the order management requirement of the assessment handout.
-    </div>
-    """, unsafe_allow_html=True)
 
     purchase_orders = products[products["Order Status"] == "Create Purchase Order"][
         ["Supplier", "Product", "Current Stock", "Reorder Point", "EOQ", "Recommended Order Qty", "Unit Cost"]
@@ -534,20 +698,11 @@ elif page == "🧾 Purchase Order Generator":
 
         st.dataframe(purchase_orders, use_container_width=True, hide_index=True)
 
-        supplier_po = purchase_orders.groupby("Supplier", as_index=False).agg({
-            "Recommended Order Qty": "sum",
-            "Estimated Order Value": "sum"
-        })
-
-        st.markdown("### Supplier Purchase Order Summary")
-        st.dataframe(supplier_po, use_container_width=True, hide_index=True)
-
-        selected_supplier = st.selectbox("Select supplier to generate purchase order", purchase_orders["Supplier"].unique())
+        selected_supplier = st.selectbox("Select supplier", purchase_orders["Supplier"].unique())
         selected_orders = purchase_orders[purchase_orders["Supplier"] == selected_supplier]
 
         st.markdown("### Generated Purchase Order")
-        st.markdown(f"**Supplier:** {selected_supplier}")
-        st.markdown("**Order Recommendation:**")
+        st.write(f"**Supplier:** {selected_supplier}")
 
         for _, row in selected_orders.iterrows():
             st.write(
@@ -555,105 +710,47 @@ elif page == "🧾 Purchase Order Generator":
                 f"(estimated value €{row['Estimated Order Value']:,.2f})."
             )
 
-        total_value = selected_orders["Estimated Order Value"].sum()
-        st.success(f"Total estimated purchase order value: €{total_value:,.2f}")
+        st.success(f"Total PO value: €{selected_orders['Estimated Order Value'].sum():,.2f}")
 
-elif page == "📊 Forecast Accuracy":
-    st.markdown('<div class="section-title">Forecast Accuracy</div>', unsafe_allow_html=True)
+elif page == "📊 Visual Analytics":
+    st.markdown('<div class="section-title">Visual Analytics</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="info-box">
-    This page compares actual monthly demand with forecast demand and calculates forecast error and accuracy.
-    You can change actual demand values in Product Management and the results update automatically.
-    </div>
-    """, unsafe_allow_html=True)
+    chart_choice = st.selectbox(
+        "Choose chart",
+        [
+            "EOQ by Product",
+            "Current Stock vs Reorder Point",
+            "Inventory Value",
+            "Forecast Accuracy",
+            "Gross Margin",
+            "Supplier Score and Risk",
+            "ABC Usage Value",
+            "Total Inventory Cost"
+        ]
+    )
 
-    accuracy = products[[
-        "Product", "Actual Monthly Demand", "Monthly Forecast", "Forecast Error", "Forecast Accuracy %"
-    ]]
-
-    st.dataframe(accuracy, use_container_width=True, hide_index=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### Actual vs Forecast Demand")
-        st.bar_chart(accuracy.set_index("Product")[["Actual Monthly Demand", "Monthly Forecast"]])
-    with col2:
-        st.markdown("### Forecast Accuracy %")
-        st.bar_chart(accuracy.set_index("Product")["Forecast Accuracy %"])
-
-    avg_accuracy = accuracy["Forecast Accuracy %"].mean()
-    if avg_accuracy >= 90:
-        st.markdown('<div class="good-box">Forecasting performance is strong and supports reliable planning decisions.</div>', unsafe_allow_html=True)
-    elif avg_accuracy >= 75:
-        st.markdown('<div class="warn-box">Forecasting performance is acceptable but should be monitored.</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="bad-box">Forecasting performance is weak. Demand assumptions should be reviewed.</div>', unsafe_allow_html=True)
-
-
-elif page == "📈 Forecast Planning":
-    st.markdown('<div class="section-title">Forecast Planning</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="info-box">
-    Forecasts are calculated from annual demand and expected growth. Change the Growth % field in Product Management to update future demand.
-    </div>
-    """, unsafe_allow_html=True)
-
-    forecast = products[["Product", "Category", "Annual Demand", "Growth %", "Monthly Forecast", "Next Year Forecast"]]
-    st.dataframe(forecast, use_container_width=True, hide_index=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### Monthly Forecast")
-        st.bar_chart(forecast.set_index("Product")["Monthly Forecast"])
-    with col2:
-        st.markdown("### Next Year Forecast")
-        st.bar_chart(forecast.set_index("Product")["Next Year Forecast"])
-
-elif page == "📦 Inventory Control":
-    st.markdown('<div class="section-title">Inventory Control</div>', unsafe_allow_html=True)
-
-    st.latex(r"EOQ=\sqrt{\frac{2DS}{H}}")
-    st.latex(r"Safety\ Stock=Z \times \sigma_d \times \sqrt{LT}")
-    st.latex(r"ROP=Daily\ Demand \times Lead\ Time + Safety\ Stock")
-
-    inv = products[[
-        "Product", "Current Stock", "Annual Demand", "EOQ", "Safety Stock",
-        "Reorder Point", "Inventory Value", "Decision"
-    ]]
-    st.dataframe(inv, use_container_width=True, hide_index=True)
-
-    st.markdown("### Operational Alerts")
-    alerts = products[products["Decision"] == "Reorder Required"]
-
-    if alerts.empty:
-        st.markdown('<div class="good-box">All products are currently within safe inventory levels.</div>', unsafe_allow_html=True)
-    else:
-        for _, row in alerts.iterrows():
-            st.markdown(
-                f"""
-                <div class="bad-box">
-                <b>{row['Product']}</b>: Current stock is {row['Current Stock']} units.
-                Reorder point is {row['Reorder Point']} units.
-                Recommended EOQ order: <b>{row['EOQ']}</b> units.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+    if chart_choice == "EOQ by Product":
+        st.bar_chart(products.set_index("Product")["EOQ"])
+    elif chart_choice == "Current Stock vs Reorder Point":
+        st.bar_chart(products.set_index("Product")[["Current Stock", "Reorder Point"]])
+    elif chart_choice == "Inventory Value":
+        st.bar_chart(products.set_index("Product")["Inventory Value"])
+    elif chart_choice == "Forecast Accuracy":
+        st.bar_chart(products.set_index("Product")["Forecast Accuracy %"])
+    elif chart_choice == "Gross Margin":
+        st.bar_chart(products.set_index("Product")["Gross Margin %"])
+    elif chart_choice == "Supplier Score and Risk":
+        st.bar_chart(suppliers.set_index("Supplier")[["Supplier Score %", "Risk Score %"]])
+    elif chart_choice == "ABC Usage Value":
+        st.bar_chart(products.set_index("Product")["Annual Usage Value"])
+    elif chart_choice == "Total Inventory Cost":
+        st.bar_chart(products.set_index("Product")["Total Inventory Cost"])
 
 elif page == "🏷️ ABC Analysis":
     st.markdown('<div class="section-title">ABC Inventory Analysis</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="info-box">
-    ABC analysis classifies products based on annual usage value: Annual Demand × Unit Cost.
-    A-items represent the highest value inventory and require closer managerial control.
-    </div>
-    """, unsafe_allow_html=True)
-
     abc = products[[
-        "Product", "Category", "Annual Demand", "Unit Cost", "Annual Usage Value",
+        "Product", "Annual Demand", "Unit Cost", "Annual Usage Value",
         "Cumulative Value %", "ABC Class"
     ]]
 
@@ -664,255 +761,175 @@ elif page == "💰 Cost Analysis":
     st.markdown('<div class="section-title">Inventory Cost Analysis</div>', unsafe_allow_html=True)
 
     cost = products[[
-        "Product", "Annual Ordering Cost", "Annual Holding Cost", "Total Inventory Cost"
+        "Product", "Annual Ordering Cost", "Annual Holding Cost", "Total Inventory Cost",
+        "Revenue Potential", "COGS", "Gross Margin %"
     ]]
 
     st.dataframe(cost, use_container_width=True, hide_index=True)
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown("### Total Inventory Cost")
-        st.bar_chart(cost.set_index("Product")["Total Inventory Cost"])
-    with col2:
-        st.markdown("### Ordering vs Holding Cost")
+        st.markdown("### Inventory Cost")
         st.bar_chart(cost.set_index("Product")[["Annual Ordering Cost", "Annual Holding Cost"]])
-
-elif page == "🚚 Supplier Management":
-    st.markdown('<div class="section-title">Supplier Management</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="info-box">
-    Edit supplier performance directly. Supplier score is recalculated using delivery, quality, cost and risk performance.
-    </div>
-    """, unsafe_allow_html=True)
-
-    edited_suppliers = st.data_editor(
-        st.session_state.suppliers,
-        num_rows="dynamic",
-        use_container_width=True,
-        hide_index=True,
-        key="supplier_editor"
-    )
-
-    if st.button("Save Supplier Database"):
-        st.session_state.suppliers = edited_suppliers
-        st.success("Supplier database saved successfully.")
-        st.rerun()
-
-    suppliers = calculate_suppliers(st.session_state.suppliers)
-
-    st.markdown("### Supplier Scorecard")
-    st.dataframe(suppliers, use_container_width=True, hide_index=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown("### Supplier Score")
-        st.bar_chart(suppliers.set_index("Supplier")["Supplier Score %"])
     with col2:
-        st.markdown("### Supplier Risk")
-        st.bar_chart(suppliers.set_index("Supplier")["Risk Score %"])
+        st.markdown("### Gross Margin %")
+        st.bar_chart(cost.set_index("Product")["Gross Margin %"])
 
 elif page == "🎯 KPI Targets":
-    st.markdown('<div class="section-title">KPI Targets & Performance Gap</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">KPI Targets</div>', unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="info-box">
-    This page compares current KPI performance against target levels to support management evaluation.
-    </div>
-    """, unsafe_allow_html=True)
-
-    current = pd.DataFrame({
-        "KPI": ["Service Level %", "Stockout Rate %", "Supplier Score %", "Inventory Turnover"],
+    kpi_data = pd.DataFrame({
+        "KPI": ["Service Level %", "Stockout Rate %", "Forecast Accuracy %", "Supplier Score %", "Inventory Turnover"],
         "Current": [
             products["Service Level %"].mean().round(1),
             products["Stockout Rate %"].mean().round(1),
+            products["Forecast Accuracy %"].mean().round(1),
             suppliers["Supplier Score %"].mean().round(1),
             products["Inventory Turnover"].mean().round(2)
-        ]
+        ],
+        "Target": [95, 2, 90, 90, 10]
     })
-
-    targets = st.session_state.kpi_targets.copy()
-    targets["Target"] = pd.to_numeric(targets["Target"], errors="coerce").fillna(0)
-
-    kpi_compare = current.merge(targets, on="KPI", how="left")
-    kpi_compare["Gap"] = (kpi_compare["Current"] - kpi_compare["Target"]).round(2)
-
-    st.dataframe(kpi_compare, use_container_width=True, hide_index=True)
-
-    st.markdown("### Edit KPI Targets")
-    edited_targets = st.data_editor(
-        st.session_state.kpi_targets,
-        num_rows="dynamic",
-        use_container_width=True,
-        hide_index=True,
-        key="target_editor"
-    )
-
-    if st.button("Save KPI Targets"):
-        st.session_state.kpi_targets = edited_targets
-        st.success("KPI targets saved.")
-        st.rerun()
+    kpi_data["Gap"] = (kpi_data["Current"] - kpi_data["Target"]).round(2)
+    st.dataframe(kpi_data, use_container_width=True, hide_index=True)
 
 elif page == "🧪 Scenario Planning":
     st.markdown('<div class="section-title">Scenario Planning</div>', unsafe_allow_html=True)
 
     product = st.selectbox("Select product", products["Product"])
-    demand_change = st.slider("Demand Change %", -50, 100, 20)
-    lead_change = st.slider("Lead Time Increase", 0, 20, 5)
-    holding_change = st.slider("Holding Cost Change %", -50, 100, 0)
-
     row = products[products["Product"] == product].iloc[0]
 
+    demand_change = st.slider("Demand Change %", -50, 100, 20)
+    lead_change = st.slider("Lead Time Change Days", -5, 20, 5)
+    holding_change = st.slider("Holding Cost Change %", -50, 100, 0)
+
     new_demand = row["Annual Demand"] * (1 + demand_change / 100)
-    new_lead = row["Lead Time"] + lead_change
+    new_lead = max(1, row["Lead Time Days"] + lead_change)
     new_holding = row["Holding Cost"] * (1 + holding_change / 100)
 
+    new_daily = new_demand / st.session_state.settings["working_days_per_year"]
     new_eoq = np.sqrt((2 * new_demand * row["Ordering Cost"]) / new_holding) if new_holding > 0 else 0
-    new_ss = Z * row["Demand SD"] * np.sqrt(new_lead)
-    new_rop = (new_demand / 300) * new_lead + new_ss
+    new_ss = row["Z Value"] * row["Demand SD"] * np.sqrt(new_lead)
+    new_rop = new_daily * new_lead + new_ss
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("New EOQ", f"{new_eoq:.0f}")
-    c2.metric("New Safety Stock", f"{new_ss:.0f}")
-    c3.metric("New Reorder Point", f"{new_rop:.0f}")
+    c1.metric("Scenario EOQ", f"{new_eoq:.0f}")
+    c2.metric("Scenario Safety Stock", f"{new_ss:.0f}")
+    c3.metric("Scenario Reorder Point", f"{new_rop:.0f}")
+
+elif page == "🤖 AI Assistance":
+    st.markdown('<div class="section-title">AI Assistance / Decision Assistant</div>', unsafe_allow_html=True)
 
     st.markdown("""
-    <div class="warn-box">
-    Scenario planning shows how changes in demand, lead time and holding cost affect inventory decisions.
+    <div class="info-box">
+    This is a transparent rule-based AI assistant. It explains management actions using EOQ, reorder point,
+    forecast accuracy, supplier risk, stockout rate and margin.
     </div>
     """, unsafe_allow_html=True)
+
+    question = st.selectbox(
+        "Choose what you need help with",
+        [
+            "Overall management summary",
+            "Which products need ordering?",
+            "Which forecasts are weak?",
+            "Which suppliers are risky?",
+            "Which products have low margin?",
+            "What should I prioritise?"
+        ]
+    )
+
+    if question == "Overall management summary":
+        st.write(f"Products monitored: {len(products)}")
+        st.write(f"Reorder alerts: {len(products[products['Decision'] == 'Reorder Required'])}")
+        st.write(f"Average forecast accuracy: {products['Forecast Accuracy %'].mean():.1f}%")
+        st.write(f"Average supplier score: {suppliers['Supplier Score %'].mean():.1f}%")
+        st.success("Priority: fix reorder alerts first, then review weak forecasts and supplier risks.")
+
+    elif question == "Which products need ordering?":
+        subset = products[products["Order Status"] == "Create Purchase Order"]
+        if subset.empty:
+            st.success("No product currently requires ordering.")
+        else:
+            for _, row in subset.iterrows():
+                st.warning(f"{row['Product']}: order {row['Recommended Order Qty']} units from {row['Supplier']}.")
+
+    elif question == "Which forecasts are weak?":
+        subset = products[products["Forecast Accuracy %"] < 75]
+        if subset.empty:
+            st.success("Forecast accuracy is acceptable.")
+        else:
+            for _, row in subset.iterrows():
+                st.warning(f"{row['Product']}: forecast accuracy {row['Forecast Accuracy %']}%, error {row['Forecast Error']} units.")
+
+    elif question == "Which suppliers are risky?":
+        subset = suppliers[(suppliers["Risk Score %"] >= 40) | (suppliers["Supplier Score %"] < 80)]
+        if subset.empty:
+            st.success("No high supplier risk detected.")
+        else:
+            for _, row in subset.iterrows():
+                st.warning(f"{row['Supplier']}: score {row['Supplier Score %']}%, risk {row['Risk Score %']}%, status {row['Status']}.")
+
+    elif question == "Which products have low margin?":
+        subset = products[products["Gross Margin %"] < 25]
+        if subset.empty:
+            st.success("No low-margin products detected.")
+        else:
+            for _, row in subset.iterrows():
+                st.warning(f"{row['Product']}: gross margin {row['Gross Margin %']}%.")
+
+    elif question == "What should I prioritise?":
+        st.markdown("### Priority list")
+        for _, row in products.iterrows():
+            if row["Suggested Action"] != "Monitor":
+                st.write(f"- {row['Product']}: {row['Suggested Action']}")
+        st.info("If nothing appears above, the system is currently stable.")
 
 elif page == "✅ Action Centre":
     st.markdown('<div class="section-title">Action Centre</div>', unsafe_allow_html=True)
 
     for _, row in products.iterrows():
-        if row["Current Stock"] <= row["Reorder Point"]:
-            st.markdown(
-                f"""
-                <div class="bad-box">
-                <b>{row['Product']}</b>: Stock is below reorder point.
-                Recommended action: place an EOQ order of <b>{row['EOQ']}</b> units.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        elif row["Inventory Turnover"] < 5:
-            st.markdown(
-                f"""
-                <div class="warn-box">
-                <b>{row['Product']}</b>: Inventory turnover is low.
-                Recommended action: review demand forecast and stock policy.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        if row["Suggested Action"] == "Create purchase order":
+            st.markdown(f'<div class="bad-box"><b>{row["Product"]}</b>: create purchase order for {row["EOQ"]} units.</div>', unsafe_allow_html=True)
+        elif row["Suggested Action"] != "Monitor":
+            st.markdown(f'<div class="warn-box"><b>{row["Product"]}</b>: {row["Suggested Action"]}.</div>', unsafe_allow_html=True)
         else:
-            st.markdown(
-                f"""
-                <div class="good-box">
-                <b>{row['Product']}</b>: Inventory position is healthy.
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-elif page == "🤖 Generative AI Use":
-    st.markdown('<div class="section-title">Use of Generative Artificial Intelligence</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="info-box">
-    This prototype was developed with the assistance of Generative AI as permitted by the assessment handout.
-    GenAI was used as a support tool for application structure, dashboard design, coding logic and documentation.
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    ### How Generative AI Supported Development
-
-    - Generated the initial Streamlit application structure.
-    - Helped design the dashboard layout and navigation flow.
-    - Supported the coding of EOQ, safety stock and reorder point calculations.
-    - Assisted in creating KPI cards, alerts and purchase order recommendations.
-    - Helped improve the user interface and decision-support workflow.
-    - Supported documentation wording for the report.
-
-    ### Human Validation
-
-    The final application logic was reviewed and adapted to align with supply chain planning and control concepts.
-    The student is responsible for explaining the application, validating the calculations and critically reflecting on
-    the limitations of AI-supported development.
-    """)
-
-elif page == "⚠️ Limitations":
-    st.markdown('<div class="section-title">Limitations</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="warn-box">
-    This application is a functional academic prototype. It is designed to demonstrate supply chain planning logic,
-    not to operate as a production-ready enterprise system.
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    ### Main Limitations
-
-    - The data is simulated/mock data and does not represent real company transactions.
-    - Forecasting is simplified and based on annual demand and growth assumptions.
-    - Supplier scores are illustrative and not based on live supplier performance data.
-    - The app is not connected to ERP, Shopify, warehouse or accounting systems.
-    - Purchase orders are recommendations only; they are not sent automatically to suppliers.
-    - The model does not include seasonality, promotions, transport disruption or real-time demand shocks.
-    - Security, user permissions and database persistence would need improvement for real business use.
-
-    ### Future Improvements
-
-    - Connect the app to real sales, inventory and supplier data.
-    - Add demand seasonality and forecast accuracy tracking.
-    - Add user login and management approval workflows.
-    - Integrate with ERP or e-commerce platforms.
-    - Add automated purchase order generation and supplier email notifications.
-    """)
+            st.markdown(f'<div class="good-box"><b>{row["Product"]}</b>: monitor.</div>', unsafe_allow_html=True)
 
 elif page == "ℹ️ Assumptions":
     st.markdown('<div class="section-title">Assumptions & Academic Notes</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="info-box">
-    <b>Data assumption:</b> The application uses simulated/mock data for academic demonstration purposes.
-    The data represents a hypothetical company, SmartHome Solutions.
+    The app uses simulated data for academic demonstration. It is a functional prototype, not a production ERP system.
     </div>
     """, unsafe_allow_html=True)
 
     st.write("""
-    The system combines forecasting, inventory planning, EOQ, reorder point logic, safety stock, supplier scorecards,
-    ABC analysis, inventory cost analysis and KPI targets. The purpose is to support managerial decision-making
-    in a supply chain planning and control context.
-    """)
-
-    st.write("""
-    Generative AI can be referenced in the accompanying report as a tool used to support application design,
-    structure, coding logic, dashboard layout and documentation. The student remains responsible for explaining,
-    validating and presenting the final application.
+    The application supports forecasting, inventory planning, EOQ, safety stock, reorder point,
+    order management, supplier management, KPI monitoring, visual analytics and AI-style decision assistance.
     """)
 
 elif page == "📤 Export":
     st.markdown('<div class="section-title">Export Centre</div>', unsafe_allow_html=True)
 
-    products_csv = products.to_csv(index=False).encode("utf-8")
-    suppliers_csv = suppliers.to_csv(index=False).encode("utf-8")
-
     st.download_button(
-        "Download Product KPI Data",
-        products_csv,
-        "product_kpi_data.csv",
+        "Download Product Calculations",
+        products.to_csv(index=False).encode("utf-8"),
+        "product_calculations.csv",
         "text/csv"
     )
 
     st.download_button(
         "Download Supplier Scorecard",
-        suppliers_csv,
+        suppliers.to_csv(index=False).encode("utf-8"),
         "supplier_scorecard.csv",
         "text/csv"
     )
 
-    st.info("Use these files as appendix evidence for the assignment.")
+    actions = products[["Product", "Supplier", "Suggested Action", "EOQ", "Reorder Point", "Recommended Order Qty"]]
+    st.download_button(
+        "Download Management Actions",
+        actions.to_csv(index=False).encode("utf-8"),
+        "management_actions.csv",
+        "text/csv"
+    )
