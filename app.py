@@ -160,6 +160,12 @@ if "suppliers" not in st.session_state:
 if "settings" not in st.session_state:
     st.session_state.settings = default_settings()
 
+if "manual_override_enabled" not in st.session_state:
+    st.session_state.manual_override_enabled = False
+
+if "manual_products" not in st.session_state:
+    st.session_state.manual_products = None
+
 # =========================================================
 # CALCULATIONS
 # =========================================================
@@ -386,6 +392,11 @@ def calculate_suppliers(df):
 products = calculate_products(st.session_state.products, st.session_state.settings)
 suppliers = calculate_suppliers(st.session_state.suppliers)
 
+# Manual override mechanism:
+# If enabled, the app uses the edited calculated table instead of only automatic calculations.
+if st.session_state.manual_override_enabled and st.session_state.manual_products is not None:
+    products = st.session_state.manual_products.copy()
+
 # =========================================================
 # HEADER
 # =========================================================
@@ -405,6 +416,7 @@ page = st.sidebar.radio(
         "🏠 Executive Dashboard",
         "⚙️ Global Settings",
         "🧾 Product Management",
+        "🛠️ Manual Override Centre",
         "🚚 Supplier Management",
         "📈 Forecast Planning",
         "📊 Forecast Accuracy",
@@ -441,11 +453,18 @@ if page == "🏠 Executive Dashboard":
     c7.metric("Inventory Turnover", f"{products['Inventory Turnover'].mean():.2f}")
     c8.metric("Open Purchase Orders", len(products[products["Order Status"] == "Create Purchase Order"]))
 
-    st.markdown("""
-    <div class="info-box">
-    The app recalculates EOQ, safety stock, reorder point, forecasts, purchase orders and KPIs automatically whenever the editable input data changes.
-    </div>
-    """, unsafe_allow_html=True)
+    if st.session_state.manual_override_enabled:
+        st.markdown("""
+        <div class="warn-box">
+        Manual override mode is active. Some calculated numbers may have been edited manually in Manual Override Centre.
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="info-box">
+        Automatic mode is active. The app recalculates EOQ, safety stock, reorder point, forecasts, purchase orders and KPIs automatically whenever the editable input data changes.
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("### Management Summary")
     st.dataframe(
@@ -551,7 +570,9 @@ elif page == "🧾 Product Management":
     with col1:
         if st.button("Save Product Data"):
             st.session_state.products = edited_products
-            st.success("Product data saved. All EOQ, ROP, forecast and KPI calculations updated.")
+            st.session_state.manual_products = None
+            st.session_state.manual_override_enabled = False
+            st.success("Product data saved. Manual overrides cleared and all EOQ, ROP, forecast and KPI calculations updated automatically.")
             st.rerun()
 
     with col2:
@@ -568,6 +589,146 @@ elif page == "🧾 Product Management":
         use_container_width=True,
         hide_index=True
     )
+
+
+elif page == "🛠️ Manual Override Centre":
+    st.markdown('<div class="section-title">Manual Override Centre: Edit Calculated Numbers</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    This page gives you two ways to use the application:
+    <br><br>
+    <b>Automatic mode:</b> You edit input numbers in Product Management and the app calculates EOQ, Safety Stock, ROP, Forecasts, Costs and KPIs automatically.
+    <br>
+    <b>Manual override mode:</b> You can directly edit calculated results such as EOQ, Safety Stock, Reorder Point, Forecast Accuracy, Inventory Value, Total Cost and Recommended Order Quantity.
+    </div>
+    """, unsafe_allow_html=True)
+
+    mode = st.radio(
+        "Choose calculation mode",
+        ["Automatic calculations", "Manual override calculations"],
+        index=1 if st.session_state.manual_override_enabled else 0
+    )
+
+    if mode == "Automatic calculations":
+        st.session_state.manual_override_enabled = False
+        st.warning("Automatic mode is active. Calculated fields are generated from the input data.")
+        st.dataframe(products, use_container_width=True, hide_index=True)
+
+        if st.button("Clear manual overrides and return to automatic mode"):
+            st.session_state.manual_products = None
+            st.session_state.manual_override_enabled = False
+            st.success("Manual overrides cleared.")
+            st.rerun()
+
+    else:
+        st.session_state.manual_override_enabled = True
+        st.markdown("""
+        <div class="warn-box">
+        Manual override mode is active. You can directly change calculated fields. 
+        Use this if you want to test managerial judgement or force a scenario manually.
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.session_state.manual_products is None:
+            editable_calculated = calculate_products(st.session_state.products, st.session_state.settings)
+        else:
+            editable_calculated = st.session_state.manual_products.copy()
+
+        manual_edit = st.data_editor(
+            editable_calculated,
+            num_rows="dynamic",
+            use_container_width=True,
+            hide_index=True,
+            key="manual_override_editor",
+            column_config={
+                "Product": st.column_config.TextColumn("Product"),
+                "Category": st.column_config.TextColumn("Category"),
+                "Supplier": st.column_config.TextColumn("Supplier"),
+
+                "Annual Demand": st.column_config.NumberColumn("Annual Demand", min_value=0, step=1),
+                "Actual Monthly Demand": st.column_config.NumberColumn("Actual Monthly Demand", min_value=0, step=1),
+                "Growth %": st.column_config.NumberColumn("Growth %", step=0.5),
+
+                "Current Stock": st.column_config.NumberColumn("Current Stock", min_value=0, step=1),
+                "Ordering Cost": st.column_config.NumberColumn("Ordering Cost", min_value=0.0, step=1.0),
+                "Holding Cost": st.column_config.NumberColumn("Holding Cost", min_value=0.01, step=0.1),
+                "Lead Time Days": st.column_config.NumberColumn("Lead Time Days", min_value=1, step=1),
+                "Demand SD": st.column_config.NumberColumn("Demand SD", min_value=0.0, step=0.5),
+                "Unit Cost": st.column_config.NumberColumn("Unit Cost", min_value=0.0, step=0.5),
+                "Selling Price": st.column_config.NumberColumn("Selling Price", min_value=0.0, step=0.5),
+
+                "Orders": st.column_config.NumberColumn("Orders", min_value=0, step=1),
+                "Orders Fulfilled": st.column_config.NumberColumn("Orders Fulfilled", min_value=0, step=1),
+                "Stockouts": st.column_config.NumberColumn("Stockouts", min_value=0, step=1),
+                "Review Period Days": st.column_config.NumberColumn("Review Period Days", min_value=1, step=1),
+                "Target Service Level %": st.column_config.NumberColumn("Target Service Level %", min_value=50, max_value=99, step=1),
+
+                "Daily Demand": st.column_config.NumberColumn("Daily Demand", min_value=0.0, step=0.1),
+                "Z Value": st.column_config.NumberColumn("Z Value", min_value=0.0, step=0.01),
+                "EOQ": st.column_config.NumberColumn("EOQ", min_value=0.0, step=1.0),
+                "Safety Stock": st.column_config.NumberColumn("Safety Stock", min_value=0.0, step=1.0),
+                "Reorder Point": st.column_config.NumberColumn("Reorder Point", min_value=0.0, step=1.0),
+                "Order-Up-To Level": st.column_config.NumberColumn("Order-Up-To Level", min_value=0.0, step=1.0),
+                "Recommended Order Qty": st.column_config.NumberColumn("Recommended Order Qty", min_value=0.0, step=1.0),
+                "Inventory Value": st.column_config.NumberColumn("Inventory Value", min_value=0.0, step=1.0),
+                "Monthly Forecast": st.column_config.NumberColumn("Monthly Forecast", min_value=0.0, step=1.0),
+                "Weekly Forecast": st.column_config.NumberColumn("Weekly Forecast", min_value=0.0, step=1.0),
+                "Selected Horizon Forecast": st.column_config.NumberColumn("Selected Horizon Forecast", min_value=0.0, step=1.0),
+                "Next Year Forecast": st.column_config.NumberColumn("Next Year Forecast", min_value=0.0, step=1.0),
+                "Forecast Error": st.column_config.NumberColumn("Forecast Error", step=1.0),
+                "Forecast Accuracy %": st.column_config.NumberColumn("Forecast Accuracy %", min_value=0.0, max_value=100.0, step=0.1),
+                "Service Level %": st.column_config.NumberColumn("Service Level %", min_value=0.0, max_value=100.0, step=0.1),
+                "Stockout Rate %": st.column_config.NumberColumn("Stockout Rate %", min_value=0.0, max_value=100.0, step=0.1),
+                "Inventory Turnover": st.column_config.NumberColumn("Inventory Turnover", min_value=0.0, step=0.1),
+                "Days of Cover": st.column_config.NumberColumn("Days of Cover", min_value=0.0, step=0.1),
+                "Revenue Potential": st.column_config.NumberColumn("Revenue Potential", min_value=0.0, step=1.0),
+                "COGS": st.column_config.NumberColumn("COGS", min_value=0.0, step=1.0),
+                "Gross Margin %": st.column_config.NumberColumn("Gross Margin %", step=0.1),
+                "Annual Usage Value": st.column_config.NumberColumn("Annual Usage Value", min_value=0.0, step=1.0),
+                "Annual Ordering Cost": st.column_config.NumberColumn("Annual Ordering Cost", min_value=0.0, step=1.0),
+                "Annual Holding Cost": st.column_config.NumberColumn("Annual Holding Cost", min_value=0.0, step=1.0),
+                "Total Inventory Cost": st.column_config.NumberColumn("Total Inventory Cost", min_value=0.0, step=1.0),
+                "Cumulative Value %": st.column_config.NumberColumn("Cumulative Value %", min_value=0.0, max_value=100.0, step=0.1),
+                "ABC Class": st.column_config.TextColumn("ABC Class"),
+                "Decision": st.column_config.TextColumn("Decision"),
+                "Order Status": st.column_config.TextColumn("Order Status"),
+                "Suggested Action": st.column_config.TextColumn("Suggested Action")
+            }
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            if st.button("Save Manual Overrides"):
+                st.session_state.manual_products = manual_edit.copy()
+                st.session_state.manual_override_enabled = True
+                st.success("Manual override values saved. All pages now use these numbers.")
+                st.rerun()
+
+        with col2:
+            if st.button("Recalculate from Inputs"):
+                st.session_state.manual_products = calculate_products(st.session_state.products, st.session_state.settings)
+                st.session_state.manual_override_enabled = True
+                st.success("Manual table recalculated from input data.")
+                st.rerun()
+
+        with col3:
+            if st.button("Disable Manual Override"):
+                st.session_state.manual_products = None
+                st.session_state.manual_override_enabled = False
+                st.success("Manual override disabled. Automatic calculations restored.")
+                st.rerun()
+
+    st.markdown("""
+    ### What this page solves
+
+    - You can edit input numbers manually.
+    - You can let the model calculate automatically.
+    - You can override calculated numbers if you want a custom managerial scenario.
+    - All other pages use the saved override values while manual mode is enabled.
+    """)
+
 
 elif page == "🚚 Supplier Management":
     st.markdown('<div class="section-title">Supplier Management: Editable Supplier Data</div>', unsafe_allow_html=True)
