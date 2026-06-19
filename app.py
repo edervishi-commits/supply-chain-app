@@ -398,6 +398,105 @@ if st.session_state.manual_override_enabled and st.session_state.manual_products
     products = st.session_state.manual_products.copy()
 
 # =========================================================
+# EXPLANATION AND CONNECTED DECISION LOGIC
+# =========================================================
+def traffic_light(value, green_threshold, orange_threshold, higher_is_better=True):
+    if higher_is_better:
+        if value >= green_threshold:
+            return "🟢 Good"
+        elif value >= orange_threshold:
+            return "🟠 Warning"
+        return "🔴 Critical"
+    else:
+        if value <= green_threshold:
+            return "🟢 Good"
+        elif value <= orange_threshold:
+            return "🟠 Warning"
+        return "🔴 Critical"
+
+def explain_product(row):
+    explanations = []
+
+    explanations.append(
+        f"Demand and forecast: {row['Product']} has annual demand of {row['Annual Demand']:.0f} units, "
+        f"monthly forecast of {row['Monthly Forecast']:.0f} units and daily demand of {row['Daily Demand']:.2f} units."
+    )
+
+    explanations.append(
+        f"EOQ: the recommended order quantity is {row['EOQ']:.0f} units because the system balances annual demand, "
+        f"ordering cost (€{row['Ordering Cost']:.2f}) and holding cost (€{row['Holding Cost']:.2f})."
+    )
+
+    explanations.append(
+        f"Safety stock: {row['Safety Stock']:.0f} units are kept to protect against demand variability and lead-time uncertainty."
+    )
+
+    explanations.append(
+        f"Reorder point: the reorder point is {row['Reorder Point']:.0f} units. This covers expected demand during "
+        f"{row['Lead Time Days']:.0f} lead-time days plus safety stock."
+    )
+
+    if row["Current Stock"] <= row["Reorder Point"]:
+        explanations.append(
+            f"Order decision: current stock is {row['Current Stock']:.0f}, which is at or below reorder point. "
+            f"The system recommends a purchase order of {row['Recommended Order Qty']:.0f} units."
+        )
+    else:
+        explanations.append(
+            f"Order decision: current stock is {row['Current Stock']:.0f}, which is above reorder point. "
+            f"No immediate order is required."
+        )
+
+    if row["Forecast Accuracy %"] < 75:
+        explanations.append(
+            f"Forecast impact: forecast accuracy is weak at {row['Forecast Accuracy %']:.1f}%. "
+            f"The manager should review demand assumptions because weak forecasting can create excess inventory or stockouts."
+        )
+    elif row["Forecast Accuracy %"] < 90:
+        explanations.append(
+            f"Forecast impact: forecast accuracy is {row['Forecast Accuracy %']:.1f}%, which is acceptable but should be monitored."
+        )
+    else:
+        explanations.append(
+            f"Forecast impact: forecast accuracy is strong at {row['Forecast Accuracy %']:.1f}%, supporting reliable planning."
+        )
+
+    if row["Gross Margin %"] < 25:
+        explanations.append(
+            f"Cost impact: gross margin is low at {row['Gross Margin %']:.1f}%. Pricing or supplier cost should be reviewed."
+        )
+    else:
+        explanations.append(
+            f"Cost impact: gross margin is {row['Gross Margin %']:.1f}%, supporting acceptable profitability."
+        )
+
+    explanations.append(
+        f"Managerial recommendation: {row['Suggested Action']}."
+    )
+
+    return explanations
+
+def product_priority(row):
+    score = 0
+    if row["Current Stock"] <= row["Reorder Point"]:
+        score += 4
+    if row["Forecast Accuracy %"] < 75:
+        score += 3
+    if row["Stockout Rate %"] > 5:
+        score += 2
+    if row["Gross Margin %"] < 25:
+        score += 1
+    return score
+
+products["Priority Score"] = products.apply(product_priority, axis=1)
+
+products["KPI Status"] = np.where(
+    products["Priority Score"] >= 5,
+    "🔴 Critical",
+    np.where(products["Priority Score"] >= 2, "🟠 Warning", "🟢 Good")
+)
+
+# =========================================================
 # HEADER
 # =========================================================
 st.markdown("""
@@ -414,6 +513,9 @@ page = st.sidebar.radio(
     "Control Tower",
     [
         "🏠 Executive Dashboard",
+        "🧠 Executive Insights",
+        "🔗 Connected Decision Flow",
+        "🚦 KPI Traffic Lights",
         "⚙️ Global Settings",
         "🧾 Product Management",
         "🛠️ Manual Override Centre",
@@ -484,6 +586,155 @@ if page == "🏠 Executive Dashboard":
     with col2:
         st.markdown("### EOQ Recommendations")
         st.bar_chart(products.set_index("Product")["EOQ"])
+
+
+elif page == "🧠 Executive Insights":
+    st.markdown('<div class="section-title">Executive Insights</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    This page connects the numbers to management meaning. It explains what is happening, why it matters and what action should be taken.
+    </div>
+    """, unsafe_allow_html=True)
+
+    total_inventory = products["Inventory Value"].sum()
+    reorder_count = len(products[products["Decision"] == "Reorder Required"])
+    avg_forecast_accuracy = products["Forecast Accuracy %"].mean()
+    avg_service = products["Service Level %"].mean()
+    avg_supplier_score = suppliers["Supplier Score %"].mean()
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Inventory Value", f"€{total_inventory:,.0f}")
+    c2.metric("Reorder Alerts", reorder_count)
+    c3.metric("Forecast Accuracy", f"{avg_forecast_accuracy:.1f}%")
+    c4.metric("Service Level", f"{avg_service:.1f}%")
+
+    st.markdown("### Current Situation")
+
+    if reorder_count > 0:
+        st.markdown(f'<div class="bad-box"><b>{reorder_count} products require reorder.</b> Inventory is below the calculated reorder point, so purchase orders should be reviewed.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="good-box"><b>No immediate reorder risk.</b> Current stock levels are above reorder point.</div>', unsafe_allow_html=True)
+
+    if avg_forecast_accuracy < 75:
+        st.markdown('<div class="bad-box"><b>Forecast accuracy is weak.</b> Demand assumptions should be reviewed before increasing inventory investment.</div>', unsafe_allow_html=True)
+    elif avg_forecast_accuracy < 90:
+        st.markdown('<div class="warn-box"><b>Forecast accuracy is acceptable but not optimal.</b> Monitor forecast errors and update demand assumptions monthly.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="good-box"><b>Forecast accuracy is strong.</b> Planning decisions are supported by reliable demand estimates.</div>', unsafe_allow_html=True)
+
+    if avg_supplier_score < 80:
+        st.markdown('<div class="bad-box"><b>Supplier performance risk.</b> Average supplier score is below target and procurement should review supplier reliability.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="good-box"><b>Supplier performance is acceptable.</b> Supplier score supports stable replenishment planning.</div>', unsafe_allow_html=True)
+
+    st.markdown("### Priority Actions")
+    priority = products.sort_values("Priority Score", ascending=False)
+    shown = False
+    for _, row in priority.head(7).iterrows():
+        if row["Priority Score"] > 0:
+            shown = True
+            st.write(f"- **{row['Product']}**: {row['Suggested Action']} | Priority score: {row['Priority Score']} | Status: {row['KPI Status']}")
+    if not shown:
+        st.success("No urgent management actions detected.")
+
+elif page == "🔗 Connected Decision Flow":
+    st.markdown('<div class="section-title">Connected Decision Flow</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    Connected logic: Demand → Forecast → Inventory → EOQ/ROP → Purchase Order → Supplier → Cost → KPI → Recommendation.
+    This shows how each number affects the next management decision.
+    </div>
+    """, unsafe_allow_html=True)
+
+    selected_product = st.selectbox("Select product to explain", products["Product"])
+    row = products[products["Product"] == selected_product].iloc[0]
+
+    st.markdown("### Demand → Forecast")
+    st.write(f"Annual demand is **{row['Annual Demand']:.0f} units**. This creates a monthly forecast of **{row['Monthly Forecast']:.0f} units** and daily demand of **{row['Daily Demand']:.2f} units**.")
+    st.write(f"Actual monthly demand is **{row['Actual Monthly Demand']:.0f} units**, giving forecast accuracy of **{row['Forecast Accuracy %']:.1f}%**.")
+
+    st.markdown("### Forecast → Inventory Planning")
+    st.write(f"Demand and lead time determine how much stock is needed. Lead time is **{row['Lead Time Days']:.0f} days** and demand variability is **{row['Demand SD']:.1f}**.")
+    st.write(f"Safety stock is therefore **{row['Safety Stock']:.0f} units**.")
+
+    st.markdown("### Inventory → EOQ / ROP")
+    st.write(f"EOQ is **{row['EOQ']:.0f} units**. Reorder Point is **{row['Reorder Point']:.0f} units**.")
+
+    st.markdown("### EOQ / ROP → Purchase Order")
+    if row["Current Stock"] <= row["Reorder Point"]:
+        st.markdown(f'<div class="bad-box">Current stock is <b>{row["Current Stock"]:.0f}</b>, which is below/equal to ROP. Create purchase order for <b>{row["Recommended Order Qty"]:.0f}</b> units.</div>', unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="good-box">Current stock is <b>{row["Current Stock"]:.0f}</b>, which is above ROP. No immediate order is needed.</div>', unsafe_allow_html=True)
+
+    st.markdown("### Purchase Order → Supplier")
+    supplier_row = suppliers[suppliers["Supplier"] == row["Supplier"]]
+    if not supplier_row.empty:
+        s = supplier_row.iloc[0]
+        st.write(f"Supplier: **{row['Supplier']}** | Score: **{s['Supplier Score %']:.1f}%** | Risk: **{s['Risk Level']}**.")
+    else:
+        st.write(f"Supplier: **{row['Supplier']}**.")
+
+    st.markdown("### Supplier / Inventory → Cost and KPI Impact")
+    st.write(f"Inventory value: **€{row['Inventory Value']:,.2f}**")
+    st.write(f"Total inventory cost: **€{row['Total Inventory Cost']:,.2f}**")
+    st.write(f"Days of cover: **{row['Days of Cover']:.1f} days**")
+    st.write(f"KPI status: **{row['KPI Status']}**")
+
+    st.markdown("### Decision Explanation Engine")
+    for explanation in explain_product(row):
+        st.write(f"- {explanation}")
+
+elif page == "🚦 KPI Traffic Lights":
+    st.markdown('<div class="section-title">KPI Traffic Lights</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="info-box">
+    Green means healthy, orange means warning and red means critical. This makes the KPIs easier to interpret for management decisions.
+    </div>
+    """, unsafe_allow_html=True)
+
+    kpi_table = pd.DataFrame({
+        "KPI": [
+            "Average Service Level",
+            "Average Forecast Accuracy",
+            "Average Supplier Score",
+            "Average Stockout Rate",
+            "Average Inventory Turnover"
+        ],
+        "Current Value": [
+            products["Service Level %"].mean().round(1),
+            products["Forecast Accuracy %"].mean().round(1),
+            suppliers["Supplier Score %"].mean().round(1),
+            products["Stockout Rate %"].mean().round(1),
+            products["Inventory Turnover"].mean().round(2)
+        ],
+        "Target": [95, 90, 90, 2, 10]
+    })
+
+    kpi_table["Status"] = [
+        traffic_light(kpi_table.loc[0, "Current Value"], 95, 90, True),
+        traffic_light(kpi_table.loc[1, "Current Value"], 90, 75, True),
+        traffic_light(kpi_table.loc[2, "Current Value"], 90, 80, True),
+        traffic_light(kpi_table.loc[3, "Current Value"], 2, 5, False),
+        traffic_light(kpi_table.loc[4, "Current Value"], 10, 5, True)
+    ]
+
+    kpi_table["Meaning"] = [
+        "Measures fulfilment of demand.",
+        "Measures reliability of planning assumptions.",
+        "Measures supplier performance.",
+        "Measures unmet demand risk.",
+        "Measures inventory efficiency."
+    ]
+
+    st.dataframe(kpi_table, use_container_width=True, hide_index=True)
+
+    st.markdown("### Product-Level Status")
+    product_status = products[["Product", "Forecast Accuracy %", "Service Level %", "Stockout Rate %", "Decision", "Suggested Action", "KPI Status"]]
+    st.dataframe(product_status, use_container_width=True, hide_index=True)
+
 
 elif page == "⚙️ Global Settings":
     st.markdown('<div class="section-title">Global Planning Settings</div>', unsafe_allow_html=True)
@@ -995,7 +1246,8 @@ elif page == "🤖 AI Assistance":
             "Which forecasts are weak?",
             "Which suppliers are risky?",
             "Which products have low margin?",
-            "What should I prioritise?"
+            "What should I prioritise?",
+            "Explain connected decision flow"
         ]
     )
 
@@ -1040,10 +1292,18 @@ elif page == "🤖 AI Assistance":
 
     elif question == "What should I prioritise?":
         st.markdown("### Priority list")
-        for _, row in products.iterrows():
+        ordered = products.sort_values("Priority Score", ascending=False)
+        for _, row in ordered.iterrows():
             if row["Suggested Action"] != "Monitor":
-                st.write(f"- {row['Product']}: {row['Suggested Action']}")
+                st.write(f"- {row['Product']}: {row['Suggested Action']} | Priority score {row['Priority Score']}")
         st.info("If nothing appears above, the system is currently stable.")
+
+    elif question == "Explain connected decision flow":
+        selected = st.selectbox("Select product for AI explanation", products["Product"], key="ai_flow_product")
+        row = products[products["Product"] == selected].iloc[0]
+        st.markdown("### AI Explanation")
+        for explanation in explain_product(row):
+            st.write(f"- {explanation}")
 
 elif page == "✅ Action Centre":
     st.markdown('<div class="section-title">Action Centre</div>', unsafe_allow_html=True)
